@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Mapa da Oficina de Cartografia Social</title>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: a sticky header with the six group chips, a side panel (mission, layers, legend, marks) and a pan/zoom map stage that fills the rest; on phones the panel becomes a bottom sheet. */
+:root{
+  --bg:#f3f1e9; --paper:#fffdf7; --fg:#1f2a1e; --muted:#5d6657; --line:#cfd5c4;
+  --accent:#2f6b3a; --accent-fg:#ffffff;
+  --g1:#d7262c; --g2:#1f5fbf; --g3:#e8761a; --g4:#2e8b3d; --g5:#7a3fb0; --g6:#e0468c; --g7:#333333;
+  --display:"Fraunces",Georgia,serif; --body:"Atkinson Hyperlegible",system-ui,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#15191a; --paper:#1e2426; --fg:#ecefe6; --muted:#a7b0a1; --line:#3a433d; --accent:#7ccf86; --accent-fg:#0f1a11; color-scheme:dark } }
+:root[data-theme="dark"]{ --bg:#15191a; --paper:#1e2426; --fg:#ecefe6; --muted:#a7b0a1; --line:#3a433d; --accent:#7ccf86; --accent-fg:#0f1a11; color-scheme:dark }
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;display:flex;flex-direction:column}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--paper);border-bottom:1px solid var(--line);padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-family:var(--display);font-weight:700;font-size:1.15rem;margin:0 0 6px;text-wrap:balance}
+h1 small{font-family:var(--body);font-weight:400;color:var(--muted);font-size:.8rem;margin-left:.5em}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:2px solid var(--line);background:transparent;color:var(--fg);border-radius:999px;padding:4px 10px;font:inherit;font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:6px}
+.chip .dot{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.chip[aria-pressed="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,var(--paper))}
+.chip:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 360px;overflow:hidden}
+aside{overflow:auto;overflow-x:hidden;box-sizing:border-box;width:100%;border-left:1px solid var(--line);background:var(--paper);padding-block:12px;padding-left:12px;padding-right:max(16px,env(safe-area-inset-right,0px));min-width:0;overflow-wrap:anywhere}
+aside h2{font-family:var(--display);font-size:1.05rem;margin:0 0 4px;color:var(--c,var(--accent))}
+aside .tema{font-size:.85rem;color:var(--muted);margin:0 0 10px}
+aside h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 6px}
+.missao{margin:0;padding-left:18px;font-size:.9rem}
+.missao li{margin-bottom:3px}
+.layer{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
+.layer input{margin-top:4px;accent-color:var(--c,var(--accent))}
+.layer label{flex:1;min-width:0;cursor:pointer;font-size:.9rem}
+.layer img{display:block;max-width:100%;margin-top:4px;background:#fff;border:1px solid var(--line);border-radius:4px;padding:2px}
+.stage{position:relative;overflow:hidden;background:#e9eee6;touch-action:none;min-width:0;cursor:grab}
+.stage.marking{cursor:crosshair}
+.canvas{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.canvas img{position:absolute;left:0;top:0;display:block;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.canvas img.hidden{display:none}
+.pin{position:absolute;transform:translate(-50%,-100%);pointer-events:none;display:flex;flex-direction:column;align-items:center}
+.pin .head{width:14px;height:14px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--c);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.pin .lbl{font-size:11px;background:#fff;color:#111;border:1px solid var(--c);padding:1px 5px;border-radius:3px;margin-top:3px;white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.tools{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:12px;display:flex;flex-direction:column;gap:6px;z-index:5}
+.tools button,.btn{background:var(--paper);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:.85rem;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.tools button[aria-pressed="true"]{background:var(--c,var(--accent));color:#fff;border-color:var(--c,var(--accent))}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.hint{position:absolute;left:max(12px,env(safe-area-inset-left,0px));bottom:12px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:.8rem;max-width:min(70%,420px);z-index:5}
+.marks{list-style:none;margin:0;padding:0;font-size:.85rem}
+.marks li{display:flex;gap:6px;align-items:center;padding:4px 0;border-top:1px solid var(--line)}
+.marks li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.marks li button{font-size:.75rem;padding:2px 6px}
+.form{display:flex;gap:6px;margin-top:6px}
+.form input{flex:1;min-width:0;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+textarea{width:100%;box-sizing:border-box;font:12px/1.3 ui-monospace,monospace;height:90px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;margin-top:6px}
+.note{font-size:.78rem;color:var(--muted)}
+.status{font-size:.78rem;color:var(--muted);margin-top:6px}
+.sheet-toggle{display:none}
+@media (max-width:760px){
+  main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
+  aside{border-left:0;border-top:1px solid var(--line);max-height:42vh;padding-left:max(16px,env(safe-area-inset-left,0px));order:2}
+  aside.collapsed{max-height:46px;overflow:hidden}
+  .stage{order:1}
+  .sheet-toggle{display:block;width:100%;text-align:left;background:none;border:0;color:var(--fg);font:inherit;font-weight:700;padding:4px 0 8px;cursor:pointer}
+}
+@media (prefers-reduced-motion:no-preference){ .canvas{transition:none} }
+</style>
+
+<header>
+  <h1>Mapa da Oficina de Cartografia Social <small>São Paulo: problemas ambientais e desigualdades territoriais</small></h1>
+  <nav class="chips" id="chips" aria-label="Grupos"></nav>
+</header>
+
+<main>
+  <div class="stage" id="stage">
+    <div class="canvas" id="canvas"></div>
+    <div class="tools">
+      <button id="btnMark" aria-pressed="false" title="Toque no mapa para marcar">Marcar</button>
+      <button id="btnIn" title="Aproximar">+</button>
+      <button id="btnOut" title="Afastar">−</button>
+      <button id="btnFit" title="Ver a cidade inteira">Cidade</button>
+    </div>
+    <div class="hint" id="hint">Arraste para mover, use dois dedos ou a roda do mouse para aproximar.</div>
+  </div>
+
+  <aside id="panel">
+    <button class="sheet-toggle" id="sheetToggle" aria-expanded="true">▾ Missão, camadas e marcações</button>
+    <h2 id="gTitle">Mapa coletivo</h2>
+    <p class="tema" id="gTema"></p>
+    <h3>Missão do grupo</h3>
+    <ul class="missao" id="gMissao"></ul>
+    <h3>Camadas do GeoSampa</h3>
+    <div id="layers"></div>
+    <p class="note">Fonte das camadas: GeoSampa, Prefeitura de São Paulo (serviço WMS), capturadas em 6 nov. 2026. Limites: subprefeituras (linha vermelha) e distritos (linha roxa), hidrografia e viário estrutural.</p>
+    <h3>Marcações deste aparelho</h3>
+    <p class="note">Toque em <strong>Marcar</strong>, depois no mapa, e escreva uma palavra. As marcas ficam só neste celular: no fim, copie a lista e passe para a folha única do grupo.</p>
+    <div class="form" id="markForm" hidden>
+      <input id="markLabel" placeholder="Uma palavra (ex.: alaga, lixo, calor)" maxlength="40">
+      <button class="btn primary" id="markSave">Salvar</button>
+      <button class="btn" id="markCancel">Cancelar</button>
+    </div>
+    <ul class="marks" id="marks"></ul>
+    <div class="form"><button class="btn" id="btnCopy">Copiar lista</button><button class="btn" id="btnClear">Apagar todas</button></div>
+    <textarea id="exportBox" readonly aria-label="Lista de marcações"></textarea>
+    <p class="status" id="status"></p>
+  </aside>
+</main>
+
+<script>
+const GROUPS = {
+  "grupo-1": {n:1, cor:"var(--g1)", hex:"#d7262c", corNome:"vermelho", titulo:"Grupo 1 · Enchentes, alagamentos e drenagem urbana",
+    tema:"A ocupação das margens dos rios, a impermeabilização do solo e as alterações nos cursos d'água agravam enchentes e alagamentos.",
+    missao:["Identificar rios, córregos e regiões suscetíveis a alagamentos.","Localizar áreas que necessitam de melhorias na drenagem.","Registrar quais regiões deveriam receber maior atenção.","Pergunta: como o crescimento urbano de São Paulo pode ter contribuído para o aumento das enchentes?"],
+    layers:[["inundacao25","Mancha de inundação (chuva de 25 anos)",["mancha_inundacao_25"],true],["ocorr_alag_inund","Ocorrências de alagamento e inundação",["risco_ocorrencia_alagamento","risco_ocorrencia_inundacao"],true],["piscinoes_drenagem","Piscinões e ações prioritárias de drenagem (PDE)",["reservatorio_amortecimento","pde_drenagem_acao_prioritaria_pontual","pde_drenagem_acao_prioritaria_linear"],false],["risco_hidrologico","Risco hidrológico",["risco_hidrologico"],false]]},
+  "grupo-2": {n:2, cor:"var(--g2)", hex:"#1f5fbf", corNome:"azul", titulo:"Grupo 2 · Saneamento básico e poluição dos recursos hídricos",
+    tema:"Apesar dos avanços, a cidade ainda enfrenta falhas de coleta e tratamento de esgoto, poluição dos rios e contaminação de mananciais.",
+    missao:["Identificar rios e córregos que necessitam de recuperação ambiental.","Localizar regiões com possíveis deficiências de saneamento.","Identificar áreas que precisam de melhorias na coleta e no tratamento de esgoto.","Pergunta: de que maneira a falta de saneamento afeta a saúde da população e a qualidade dos rios?"],
+    layers:[["mananciais","Áreas de proteção dos mananciais (Billings, Guarapiranga, Juquery)",["manancial_billings","manancial_guarapiranga","manancial_juquery"],true],["favela_loteamento","Favelas e loteamentos irregulares (onde o esgoto costuma faltar)",["habi_favela2geosampa","habi_loteamento2geosampa"],true],["bacias","Bacias hidrográficas",["bacia_hidrografica"],false],["app_oida","Áreas prioritárias de proteção das águas (APP-OIDA)",["app_oida"],false]]},
+  "grupo-3": {n:3, cor:"var(--g3)", hex:"#e8761a", corNome:"laranja", titulo:"Grupo 3 · Resíduos sólidos e descarte irregular",
+    tema:"O descarte irregular de lixo e entulho polui o solo e a água, obstrui bueiros e afeta a saúde pública.",
+    missao:["Identificar possíveis pontos de descarte irregular.","Localizar regiões que necessitam de maior fiscalização.","Identificar locais que precisam de coleta adequada e reciclagem.","Pergunta: como o descarte inadequado de resíduos afeta o ambiente e a qualidade de vida?"],
+    layers:[["ecopontos_pev","Ecopontos e pontos de entrega voluntária",["ecoponto","ponto_entrega_voluntaria"],true],["cooperativas","Cooperativas e centrais de triagem",["central_triagem_cooperativa","central_triagem_mecanizada"],true],["aterros","Aterros sanitários e de entulho",["aterro_sanitario","aterro_rcc"],true],["sac_coleta","Reclamações sobre coleta de lixo e coleta seletiva (SP156)",["sac_reclamacao_coleta_lixo_domiciliar","sac_reclamacao_coleta_seletiva"],false]]},
+  "grupo-4": {n:4, cor:"var(--g4)", hex:"#2e8b3d", corNome:"verde", titulo:"Grupo 4 · Áreas verdes, desmatamento e ilhas de calor",
+    tema:"A retirada da vegetação e a concentração de superfícies impermeáveis elevam a temperatura e reduzem as áreas naturais.",
+    missao:["Identificar parques, áreas verdes e remanescentes de vegetação.","Localizar regiões com pouca arborização.","Identificar áreas que poderiam receber recuperação ambiental.","Pergunta: por que árvores e áreas verdes melhoram a qualidade ambiental da cidade?"],
+    layers:[["cobertura_vegetal","Cobertura vegetal 2020",["cobertura_vegetal"],true],["parques_uc","Parques municipais e unidades de conservação (PDE)",["pde_parque_municipal","pde_outra_unidade_conservacao"],true],["remanescentes","Remanescentes de Mata Atlântica",["remanescente_pmma"],false],["favela_cortico","Favelas e cortiços (onde falta verde)",["habi_favela2geosampa","habi_cortico2geosampa"],false]]},
+  "grupo-5": {n:5, cor:"var(--g5)", hex:"#7a3fb0", corNome:"roxo", titulo:"Grupo 5 · Ocupação de áreas de risco e deslizamentos",
+    tema:"A desigualdade no acesso à moradia leva parte da população a viver em encostas e margens de rios, sujeitas a deslizamentos e inundações.",
+    missao:["Identificar encostas e áreas suscetíveis a deslizamentos.","Localizar regiões próximas a margens de rios sujeitas a inundações.","Identificar áreas que necessitam de prevenção e infraestrutura.","Pergunta: por que populações em vulnerabilidade social estão mais expostas aos riscos ambientais?"],
+    layers:[["risco_geologico","Áreas de risco geológico (R1 a R4)",["area_risco_geologico"],true],["ocorr_deslizamento","Ocorrências de deslizamento",["risco_ocorrencia_deslizamento","risco_ocorrencia_risco_deslizamento"],true],["favela_nucleo_lote","Favelas, núcleos e loteamentos irregulares",["habi_favela2geosampa","habi_nucleo2geosampa","habi_loteamento2geosampa"],false],["risco_hidrologico","Risco hidrológico",["risco_hidrologico"],false]]},
+  "grupo-6": {n:6, cor:"var(--g6)", hex:"#e0468c", corNome:"rosa", titulo:"Grupo 6 · Desigualdade socioambiental e infraestrutura urbana",
+    tema:"Os problemas ambientais não afetam todos da mesma forma: há regiões com mais infraestrutura, saneamento, arborização e espaços públicos do que outras.",
+    missao:["Identificar regiões com pouca infraestrutura urbana.","Localizar áreas com menor disponibilidade de espaços verdes e equipamentos públicos.","Identificar locais que necessitam de melhorias no saneamento, transporte e serviços.","Pergunta: por que algumas populações têm mais acesso a um ambiente saudável do que outras, na mesma cidade?"],
+    layers:[["favela_cortico","Favelas e cortiços",["habi_favela2geosampa","habi_cortico2geosampa"],true],["zeis1","ZEIS 1 (zonas de interesse social, PDE 2014)",["pde2014_v_zeis_04_map"],false],["ubs_ceu","UBS e CEUs (equipamentos públicos)",["equipamento_saude_ubs_posto_centro","equipamento_educacao_ceu"],true],["parques","Parques municipais",["pde_parque_municipal"],true]]},
+  "todos": {n:0, cor:"var(--g7)", hex:"#333333", corNome:"todas as cores", titulo:"Mapa coletivo · todos os temas",
+    tema:"A folha única da turma: as camadas de todos os grupos sobrepostas. Onde os problemas se acumulam?",
+    missao:["Ligar uma camada de cada grupo e observar onde elas coincidem.","Comparar com as estrelas (marcas de vivência) da folha única.","Perguntar: o que o GeoSampa não mostra?"],
+    layers:[["inundacao25","G1 · Mancha de inundação (25 anos)",["mancha_inundacao_25"],true],["mananciais","G2 · Mananciais",["manancial_billings","manancial_guarapiranga","manancial_juquery"],false],["ecopontos_pev","G3 · Ecopontos e PEVs",["ecoponto","ponto_entrega_voluntaria"],false],["cobertura_vegetal","G4 · Cobertura vegetal 2020",["cobertura_vegetal"],true],["risco_geologico","G5 · Áreas de risco geológico",["area_risco_geologico"],true],["favela_cortico","G6 · Favelas e cortiços",["habi_favela2geosampa","habi_cortico2geosampa"],true]]},
+};
+const ORDER = ["grupo-1","grupo-2","grupo-3","grupo-4","grupo-5","grupo-6","todos"];
+const IMG_W = 2400, IMG_H = 3636; // manifest.json has the exact size; overwritten on load
+
+let current = "todos", scale = 0.2, tx = 0, ty = 0, marking = false, pending = null;
+const stage = document.getElementById("stage"), canvas = document.getElementById("canvas");
+const imgs = {}; // key -> <img>
+let W = IMG_W, H = IMG_H;
+
+function store(k, v){ try{ if(v===undefined) return JSON.parse(localStorage.getItem(k)||"null"); localStorage.setItem(k, JSON.stringify(v)); }catch(e){ return null; } }
+
+function buildChips(){
+  const nav = document.getElementById("chips"); nav.innerHTML = "";
+  for(const k of ORDER){ const g = GROUPS[k]; const b = document.createElement("button"); b.className="chip"; b.style.setProperty("--c", g.cor); b.setAttribute("aria-pressed", String(k===current)); b.innerHTML = `<span class="dot"></span>${k==="todos"?"Todos":"Grupo "+g.n}`; b.addEventListener("click", ()=>{ location.hash = k; }); nav.appendChild(b); }
+}
+function img(key){
+  if(imgs[key]) return imgs[key];
+  const el = document.createElement("img"); el.src = `files/ov_${key}.png`; el.width = W; el.height = H; el.alt = ""; el.className = "hidden"; el.decoding="async";
+  canvas.insertBefore(el, canvas.querySelector(".pin")); imgs[key] = el; return el;
+}
+function show(){
+  const g = GROUPS[current];
+  document.documentElement.style.setProperty("--c", g.cor);
+  document.getElementById("panel").style.setProperty("--c", g.cor);
+  document.getElementById("stage").style.setProperty("--c", g.cor);
+  document.getElementById("gTitle").textContent = g.titulo;
+  document.getElementById("gTema").textContent = g.tema + (g.n ? ` Cor dos adesivos: ${g.corNome}.` : "");
+  const ul = document.getElementById("gMissao"); ul.innerHTML = ""; g.missao.forEach(m=>{ const li=document.createElement("li"); li.textContent=m; ul.appendChild(li); });
+  for(const b of document.querySelectorAll(".chip")) b.setAttribute("aria-pressed", String(b.textContent.trim()===(current==="todos"?"Todos":"Grupo "+g.n)));
+  // layers
+  Object.values(imgs).forEach(el=>{ if(el.dataset.base!=="1") el.classList.add("hidden"); });
+  const box = document.getElementById("layers"); box.innerHTML = "";
+  const saved = store("layers:"+current) || {};
+  g.layers.forEach(([key,label,legendLayers,def])=>{
+    const on = key in saved ? saved[key] : def; const el = img(key); el.classList.toggle("hidden", !on);
+    const row = document.createElement("div"); row.className="layer";
+    const id = "ly_"+current+"_"+key;
+    row.innerHTML = `<input type="checkbox" id="${id}" ${on?"checked":""}><label for="${id}">${label}${legendLayers.map(l=>`<img src="files/leg_${l}.png" alt="Legenda de ${l}" loading="lazy">`).join("")}</label>`;
+    row.querySelector("input").addEventListener("change", e=>{ el.classList.toggle("hidden", !e.target.checked); const s = store("layers:"+current)||{}; s[key]=e.target.checked; store("layers:"+current, s); });
+    box.appendChild(row);
+  });
+  renderMarks();
+}
+function renderMarks(){
+  const list = store("marks:"+current) || []; const ul = document.getElementById("marks"); ul.innerHTML = "";
+  canvas.querySelectorAll(".pin").forEach(p=>p.remove());
+  const g = GROUPS[current];
+  list.forEach((m,i)=>{
+    const pin = document.createElement("div"); pin.className="pin"; pin.style.setProperty("--c", m.cor||g.cor); pin.style.left = (m.x*W)+"px"; pin.style.top = (m.y*H)+"px";
+    pin.innerHTML = `<div class="head"></div><div class="lbl"></div>`; pin.querySelector(".lbl").textContent = m.label; canvas.appendChild(pin);
+    const li = document.createElement("li"); li.innerHTML = `<span class="dot" style="width:10px;height:10px;border-radius:50%;background:${m.cor||g.cor};flex:none"></span><span></span><button class="btn">remover</button>`;
+    li.querySelector("span:nth-child(2)").textContent = `${i+1}. ${m.label}`;
+    li.querySelector("button").addEventListener("click", ()=>{ list.splice(i,1); store("marks:"+current, list); renderMarks(); });
+    ul.appendChild(li);
+  });
+  const [x0,y0,x1,y1] = BBOX;
+  document.getElementById("exportBox").value = list.map((m,i)=>`${current};${i+1};${m.label};lon ${(x0+m.x*(x1-x0)).toFixed(4)};lat ${(y1-m.y*(y1-y0)).toFixed(4)}`).join("\n");
+}
+const BBOX = [-46.84,-24.02,-46.35,-23.34];
+
+// pan / zoom
+function apply(){ canvas.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`; }
+function fit(){ const r = stage.getBoundingClientRect(); scale = Math.min(r.width/W, r.height/H); tx = (r.width - W*scale)/2; ty = (r.height - H*scale)/2; apply(); }
+function zoomAt(f, cx, cy){ const ns = Math.max(0.05, Math.min(3, scale*f)); const r = stage.getBoundingClientRect(); const px = cx - r.left, py = cy - r.top; tx = px - (px - tx)*(ns/scale); ty = py - (py - ty)*(ns/scale); scale = ns; apply(); }
+const pts = new Map(); let last = null, moved = false, pinch = null;
+stage.addEventListener("pointerdown", e=>{ stage.setPointerCapture(e.pointerId); pts.set(e.pointerId, {x:e.clientX,y:e.clientY}); moved=false; if(pts.size===1) last={x:e.clientX,y:e.clientY}; if(pts.size===2){ const [a,b]=[...pts.values()]; pinch={d:Math.hypot(a.x-b.x,a.y-b.y), cx:(a.x+b.x)/2, cy:(a.y+b.y)/2}; } });
+stage.addEventListener("pointermove", e=>{ if(!pts.has(e.pointerId)) return; pts.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pts.size===2 && pinch){ const [a,b]=[...pts.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); const cx=(a.x+b.x)/2, cy=(a.y+b.y)/2; zoomAt(d/pinch.d, cx, cy); tx += cx-pinch.cx; ty += cy-pinch.cy; apply(); pinch={d,cx,cy}; moved=true; } else if(pts.size===1 && last){ const dx=e.clientX-last.x, dy=e.clientY-last.y; if(Math.abs(dx)+Math.abs(dy)>3) moved=true; tx+=dx; ty+=dy; last={x:e.clientX,y:e.clientY}; apply(); } });
+function up(e){ pts.delete(e.pointerId); if(pts.size<2) pinch=null; if(pts.size===0){ if(!moved && marking && e.type==="pointerup") startMark(e.clientX, e.clientY); last=null; } else { const [a]=[...pts.values()]; last={x:a.x,y:a.y}; } }
+stage.addEventListener("pointerup", up); stage.addEventListener("pointercancel", up);
+stage.addEventListener("wheel", e=>{ e.preventDefault(); zoomAt(e.deltaY<0?1.2:1/1.2, e.clientX, e.clientY); }, {passive:false});
+document.getElementById("btnIn").addEventListener("click", ()=>{ const r=stage.getBoundingClientRect(); zoomAt(1.4, r.left+r.width/2, r.top+r.height/2); });
+document.getElementById("btnOut").addEventListener("click", ()=>{ const r=stage.getBoundingClientRect(); zoomAt(1/1.4, r.left+r.width/2, r.top+r.height/2); });
+document.getElementById("btnFit").addEventListener("click", fit);
+window.addEventListener("resize", ()=>{ /* keep view */ });
+
+// marking
+const btnMark = document.getElementById("btnMark");
+btnMark.addEventListener("click", ()=>{ marking=!marking; btnMark.setAttribute("aria-pressed", String(marking)); stage.classList.toggle("marking", marking); document.getElementById("hint").textContent = marking ? "Toque no lugar do problema. Depois escreva uma palavra e salve." : "Arraste para mover, use dois dedos ou a roda do mouse para aproximar."; });
+function startMark(cx, cy){ const r = stage.getBoundingClientRect(); const x = ((cx - r.left) - tx)/scale/W, y = ((cy - r.top) - ty)/scale/H; if(x<0||x>1||y<0||y>1) return; pending={x,y}; document.getElementById("markForm").hidden=false; document.getElementById("panel").classList.remove("collapsed"); const inp=document.getElementById("markLabel"); inp.value=""; inp.focus(); }
+document.getElementById("markSave").addEventListener("click", ()=>{ if(!pending) return; const label = document.getElementById("markLabel").value.trim() || "sem nome"; const list = store("marks:"+current)||[]; list.push({x:pending.x,y:pending.y,label,cor:GROUPS[current].hex}); store("marks:"+current, list); pending=null; document.getElementById("markForm").hidden=true; renderMarks(); document.getElementById("status").textContent = "Marcação salva neste aparelho."; });
+document.getElementById("markCancel").addEventListener("click", ()=>{ pending=null; document.getElementById("markForm").hidden=true; });
+document.getElementById("markLabel").addEventListener("keydown", e=>{ if(e.key==="Enter") document.getElementById("markSave").click(); });
+document.getElementById("btnClear").addEventListener("click", ()=>{ const s=document.getElementById("status"); if(s.dataset.confirm==="1"){ store("marks:"+current, []); renderMarks(); s.textContent="Marcações apagadas."; s.dataset.confirm="0"; } else { s.textContent="Toque de novo em “Apagar todas” para confirmar."; s.dataset.confirm="1"; } });
+document.getElementById("btnCopy").addEventListener("click", async ()=>{ const box=document.getElementById("exportBox"); const s=document.getElementById("status"); try{ await navigator.clipboard.writeText(box.value); s.textContent="Lista copiada."; }catch(e){ box.focus(); box.select(); s.textContent="Selecione o texto e copie manualmente."; } });
+document.getElementById("sheetToggle").addEventListener("click", e=>{ const p=document.getElementById("panel"); p.classList.toggle("collapsed"); e.currentTarget.setAttribute("aria-expanded", String(!p.classList.contains("collapsed"))); });
+
+// base + routing
+function route(){ const h = (location.hash||"").replace("#",""); current = GROUPS[h] ? h : "todos"; show(); }
+async function init(){
+  try{ const r = await fetch("files/manifest.json"); const m = await r.json(); W = m.W; H = m.H; }catch(e){}
+  canvas.style.width = W+"px"; canvas.style.height = H+"px";
+  const base = document.createElement("img"); base.src = "files/ov_base.png"; base.width=W; base.height=H; base.alt="Limites de subprefeituras e distritos de São Paulo, hidrografia e viário"; base.dataset.base="1"; canvas.appendChild(base); imgs.base = base;
+  buildChips(); route(); fit();
+  window.addEventListener("hashchange", route);
+}
+init();
+</script>
+
+</body>
+</html>
