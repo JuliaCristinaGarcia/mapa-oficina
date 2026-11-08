@@ -1,0 +1,29 @@
+MAPA DA OFICINA DE CARTOGRAFIA SOCIAL - versao para hospedar (sem login)
+
+O que ha aqui
+  index.html      a pagina do mapa (abre tambem direto no computador, com dois cliques)
+  files/          as camadas do GeoSampa (imagens) e as legendas
+  gerar_qr.py     gera os 7 QR codes para a URL final
+
+Como publicar de graca (GitHub Pages, cerca de 10 minutos)
+  1. Crie uma conta em https://github.com (gratis). Anote o nome de usuario.
+  2. Clique em "New repository". Nome sugerido: mapa-oficina. Marque "Public". Clique em "Create repository".
+  3. Clique em "uploading an existing file" (ou "Add file" > "Upload files").
+     Arraste o arquivo index.html E a pasta files inteira (com todas as imagens). Clique em "Commit changes".
+     Se o navegador nao aceitar a pasta, arraste os arquivos de dentro de files em um segundo envio,
+     criando antes a pasta: em "Add file" > "Create new file", escreva "files/x.txt", salve, depois envie as imagens para dentro dela.
+  4. Va em Settings > Pages. Em "Branch", escolha "main" e a pasta "/ (root)". Salve.
+  5. Em 1 a 3 minutos aparece a URL, no formato https://SEU-USUARIO.github.io/mapa-oficina/
+  6. Abra a URL no celular e confira. Depois gere os QR codes:
+        python gerar_qr.py https://SEU-USUARIO.github.io/mapa-oficina/
+     Os arquivos saem na pasta "QR codes". Cada QR abre direto no grupo (#grupo-1 ... #grupo-6, #todos).
+
+Alternativa ainda mais rapida (Netlify Drop)
+  1. Entre em https://app.netlify.com/drop (pede um cadastro gratis por e-mail).
+  2. Arraste a pasta mapa-oficina-site inteira para a area indicada.
+  3. Em segundos aparece uma URL (algo como https://nome-aleatorio.netlify.app). Gere os QR codes com ela.
+
+Observacoes
+  - Os alunos nao precisam de conta nenhuma: e um site comum.
+  - Tamanho total: cerca de 18 MB; cada grupo carrega so as camadas do seu tema (3 a 5 MB).
+  - As marcacoes feitas no celular ficam so naquele celular (nao sao enviadas a lugar nenhum).
